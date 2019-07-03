@@ -1140,14 +1140,14 @@ static int read_frame_v4l2(CvCaptureCAM_V4L* capture) {
 #else
    capture->bufferIndex = buf.index;
 #endif
+   capture->timestamp = buf.timestamp;   //printf( "timestamp update done \n");
+   capture->sequence = buf.sequence;
 
    if (-1 == xioctl (capture->deviceHandle, VIDIOC_QBUF, &buf))
        perror ("VIDIOC_QBUF");
 
    //set timestamp in capture struct to be timestamp of most recent frame
    /** where timestamps refer to the instant the field or frame was received by the driver, not the capture time*/
-   capture->timestamp = buf.timestamp;   //printf( "timestamp update done \n");
-   capture->sequence = buf.sequence;
 
    return 1;
 }
