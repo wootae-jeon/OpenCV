@@ -1166,15 +1166,15 @@ static int read_frame_v4l2(CvCaptureCAM_V4L* capture) {
     capture->buffers[buf.index].start,
     capture->buffers[MAX_V4L_BUFFERS].length );
    capture->bufferIndex = MAX_V4L_BUFFERS;
-   printf("got data in buff %d, len=%d, flags=0x%X, seq=%d, used=%d)\n",
-      buf.index, buf.length, buf.flags, buf.sequence, buf.bytesused);
+//   printf("got data in buff %d, len=%d, flags=0x%X, seq=%d, used=%d)\n",
+//      buf.index, buf.length, buf.flags, buf.sequence, buf.bytesused);
 #else
    capture->bufferIndex = buf.index;
 #endif
 
    capture->timestamp = buf.timestamp;  //printf( "timestamp update done \n");
    capture->sequence = buf.sequence;
-	printf("opencv timestamp : %f\n",capture->timestamp.tv_sec*1000+(double)capture->timestamp.tv_usec*0.001);
+//	printf("opencv timestamp : %f\n",capture->timestamp.tv_sec*1000+(double)capture->timestamp.tv_usec*0.001);
 //   if (-1 == xioctl (capture->deviceHandle, VIDIOC_QBUF, &buf))
 //       perror ("VIDIOC_QBUF");
 
