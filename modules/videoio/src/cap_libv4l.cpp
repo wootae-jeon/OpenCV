@@ -294,6 +294,7 @@ struct buffer
 static unsigned int n_buffers = 0;
 int FirstRead=1;
 int SYNC_FETCH=0;
+int changed_buffer_size;
 /* TODO: Dilemas: */
 /* TODO: Consider drop the use of this data structure and perform ioctl to obtain needed values */
 /* TODO: Consider at program exit return controls to the initial values - See v4l2_free_ranges function */
@@ -358,6 +359,7 @@ static void icvCloseCAM_V4L( CvCaptureCAM_V4L* capture );
 static int icvGrabFrameCAM_V4L( CvCaptureCAM_V4L* capture );
 static IplImage* icvRetrieveFrameCAM_V4L( CvCaptureCAM_V4L* capture, int );
 CvCapture* cvCreateCameraCapture_V4L( int index );
+CvCapture* cvCreateCameraCapture_V4L_buffer_size( int index, int change_buffer_size, int buffer_size);
 
 static double icvGetPropertyCAM_V4L( CvCaptureCAM_V4L* capture, int property_id );
 static int    icvSetPropertyCAM_V4L( CvCaptureCAM_V4L* capture, int property_id, double value );
@@ -775,7 +777,8 @@ static int _capture_V4L2 (CvCaptureCAM_V4L *capture, const char *deviceName)
 
    CLEAR (capture->req);
 
-   unsigned int buffer_number = DEFAULT_V4L_BUFFERS;
+   //unsigned int buffer_number = DEFAULT_V4L_BUFFERS;
+   unsigned int buffer_number = changed_buffer_size;
 
    try_again:
 
@@ -1104,46 +1107,8 @@ static CvCaptureCAM_V4L * icvCaptureFromCAM_V4L (const char* deviceName)
 #ifdef HAVE_CAMV4L2
 
 static int read_frame_v4l2(CvCaptureCAM_V4L* capture) {
-	printf("SYNC_FETCH :%d\n", SYNC_FETCH);
+	//printf("SYNC_FETCH :%d\n", SYNC_FETCH);
 	if(!SYNC_FETCH){
-	//swith(SYNC_FETCH){
-//    icvCloseCAM_V4L(capture);
-//      
-//		capture->req.count=2;
-//printf("req.count : %d\n",capture->req.count);
-//   if (-1 == xioctl (capture->deviceHandle, VIDIOC_REQBUFS, &capture->req))
-//   {
-//       if (EINVAL == errno)
-//       {
-//         //fprintf (stderr, "%s does not support memory mapping\n", deviceName);
-//         fprintf (stderr, "wootae does not support memory mapping\n");
-//       } else {
-//         perror ("VIDIOC_REQBUFS");
-//       }
-//       /* free capture, and returns an error code */
-//       icvCloseCAM_V4L (capture);
-//       return -1;
-//   }
-//   detect_v4l2 = try_init_v4l2(capture, deviceName);
-		//close(26);
-//		printf("closeeee\n");
-//  capture->deviceHandle = v4l2_open ("/dev/video0", O_RDWR /* required */ | O_NONBLOCK, 0);
-//		close(capture->deviceHandle);
-//		usleep(1000000);
-//		capture->req.count=2;
-// if (-1 == xioctl (capture->deviceHandle, VIDIOC_REQBUFS, &capture->req))
-//   {
-//       if (EINVAL == errno)
-//       {
-//         //fprintf (stderr, "%s does not support memory mapping\n", deviceName);
-//         fprintf (stderr, "wootae does not support memory mapping\n");
-//       } else {
-//         perror ("VIDIOC_REQBUFS");
-//       }
-//       /* free capture, and returns an error code */
-//       icvCloseCAM_V4L (capture);
-//       return -1;
-//   }
 	    struct v4l2_buffer buf;
 	
 	    CLEAR (buf);
@@ -1176,8 +1141,8 @@ static int read_frame_v4l2(CvCaptureCAM_V4L* capture) {
 	    capture->buffers[buf.index].start,
 	    capture->buffers[MAX_V4L_BUFFERS].length );
 	   capture->bufferIndex = MAX_V4L_BUFFERS;
-	   printf("got data in buff %d, len=%d, flags=0x%X, seq=%d, used=%d)\n",
-	      buf.index, buf.length, buf.flags, buf.sequence, buf.bytesused);
+//	   printf("got data in buff %d, len=%d, flags=0x%X, seq=%d, used=%d)\n",
+//	      buf.index, buf.length, buf.flags, buf.sequence, buf.bytesused);
 	#else
 	   capture->bufferIndex = buf.index;
 	#endif
@@ -1253,8 +1218,8 @@ static int read_frame_v4l2(CvCaptureCAM_V4L* capture) {
 	    capture->buffers[buf.index].start,
 	    capture->buffers[MAX_V4L_BUFFERS].length );
 	   capture->bufferIndex = MAX_V4L_BUFFERS;
-	   printf("go data in buff %d, len=%d, flags=0x%X, seq=%d, used=%d)\n",
-	      buf.index, buf.length, buf.flags, buf.sequence, buf.bytesused);
+//	   printf("go data in buff %d, len=%d, flags=0x%X, seq=%d, used=%d)\n",
+//	      buf.index, buf.length, buf.flags, buf.sequence, buf.bytesused);
 	#else
 	   capture->bufferIndex = buf.index;
 	#endif
@@ -2110,7 +2075,25 @@ bool CvCaptureCAM_V4L_CPP::setProperty( int propId, double value )
 CvCapture* cvCreateCameraCapture_V4L( int index )
 {
     CvCaptureCAM_V4L_CPP* capture = new CvCaptureCAM_V4L_CPP;
+	changed_buffer_size=DEFAULT_V4L_BUFFERS;
 
+    if( capture->open( index ))
+        return (CvCapture*)capture;
+
+    delete capture;
+    return 0;
+}
+
+CvCapture* cvCreateCameraCapture_V4L_buffer_size( int index , int change_buffer_size, int buffer_size)
+{
+    CvCaptureCAM_V4L_CPP* capture = new CvCaptureCAM_V4L_CPP;
+	if(buffer_size>0){
+		changed_buffer_size=buffer_size;
+	}else if (buffer_size==0) {
+		changed_buffer_size=1;
+		SYNC_FETCH=1;
+	}else changed_buffer_size=DEFAULT_V4L_BUFFERS;
+	
     if( capture->open( index ))
         return (CvCapture*)capture;
 

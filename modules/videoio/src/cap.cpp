@@ -284,7 +284,33 @@ CV_IMPL CvCapture * cvCreateCameraCapture (int index)
 
     return capture;
 }
+CV_IMPL CvCapture * cvCreateCameraCapture_buffer_size (int index, int change_buffer_size, int buffer_size)
+{
+    // interpret preferred interface (0 = autodetect)
+    int pref = (index / 100) * 100;
 
+    // remove pref from index
+    index -= pref;
+
+    // local variable to memorize the captured device
+    CvCapture *capture = 0;
+
+    switch (pref)
+    {
+    default:
+        // user specified an API we do not know
+        // bail out to let the user know that it is not available
+        if (pref) break;
+
+    case CAP_VFW: // or CAP_V4L or CAP_V4L2
+#if defined HAVE_LIBV4L || defined HAVE_CAMV4L || defined HAVE_CAMV4L2 || defined HAVE_VIDEOIO
+        TRY_OPEN(capture, cvCreateCameraCapture_V4L_buffer_size(index,change_buffer_size,buffer_size))
+#endif
+
+    }
+
+    return capture;
+}
 /**
  * Videoreader dispatching method: it tries to find the first
  * API that can access a given filename.
@@ -612,6 +638,12 @@ VideoCapture::VideoCapture(int index)
     open(index);
 }
 
+VideoCapture::VideoCapture(int index, int change_buffer, int buffer_size)
+{
+	CV_TRACE_FUNCTION();
+	open(index, change_buffer, buffer_size);
+}
+
 VideoCapture::~VideoCapture()
 {
     CV_TRACE_FUNCTION();
@@ -649,6 +681,17 @@ bool VideoCapture::open(int index)
     if (!icap.empty())
         return true;
     cap.reset(cvCreateCameraCapture(index));
+    return isOpened();
+}
+bool VideoCapture::open(int index, int change_buffer_size, int buffer_size)
+{
+    CV_TRACE_FUNCTION();
+
+    if (isOpened()) release();
+    icap = IVideoCapture_create(index);
+    if (!icap.empty())
+        return true;
+    cap.reset(cvCreateCameraCapture_buffer_size(index, change_buffer_size, buffer_size));
     return isOpened();
 }
 bool  VideoCapture::open(int cameraNum, int apiPreference)
